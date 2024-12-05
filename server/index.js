@@ -209,7 +209,7 @@ app.get("/getcode", async (req, res) => {
       const language = response[response.length - 1].language;  // Fetch language from the database
   
       // Slice the code to 1000 characters if it exceeds that length
-      const slicedCode = lastCode.slice(0, 1000); // Slice the code to 1000 characters
+      const slicedCode = lastCode.slice(0, 2000); // Slice the code to 1000 characters
   
       // Send the sliced code along with language and other metadata
       res.status(200).send({
