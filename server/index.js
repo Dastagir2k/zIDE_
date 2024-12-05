@@ -268,7 +268,7 @@ app.get("/getallcode", async (req, res) => {
       const response = {
         data: codes.map((item) => {
             // Trim code to 1000 characters if it exceeds
-            return item.code.length > 1000 ? item.code.slice(0, 1000) : item.code;
+            return item.code.length > 1000 ? item.code.slice(0, 2000) : item.code;
           }),
         pagination: {
           page,
