@@ -197,12 +197,11 @@ app.get("/getcode", async (req, res) => {
     const userId = req.query.userId;
     const response = await Code.find({ userId: userId });
 
-    for (let lastElement in response)
-       lastElement;
+    
 
-    console.log(response[lastElement]);
+    console.log(response[response.length - 1]);
 
-    res.status(200).send(response[lastElement]);
+    res.status(200).send(response[response.length - 1]);
 });
 
 // get all the code of the user
