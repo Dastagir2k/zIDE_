@@ -205,13 +205,55 @@ app.get("/getcode", async (req, res) => {
 });
 
 // get all the code of the user
+// app.get("/getallcode", async (req, res) => {
+//     const userId = req.query.userId;
+//     const response = await Code.find({ userId: userId });
+//     console.log("all the code of user " + response);
+//     const codeArray = response.map(item => item.code);
+//     res.status(200).send(codeArray);
+// });
+
+
 app.get("/getallcode", async (req, res) => {
     const userId = req.query.userId;
-    const response = await Code.find({ userId: userId });
-    console.log("all the code of user " + response);
-    const codeArray = response.map(item => item.code);
-    res.status(200).send(codeArray);
-});
+    const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+    const perPage = parseInt(req.query.perPage) || 10; // Default to 10 codes per page
+  
+    if (!userId) {
+      return res.status(400).send({ error: "UserId is required" });
+    }
+  
+    try {
+      // Count total codes for the user
+      const totalCodes = await Code.countDocuments({ userId });
+  
+      // Calculate pagination details
+      const skip = (page - 1) * perPage;
+      const totalPages = Math.ceil(totalCodes / perPage);
+  
+      // Fetch codes for the current page
+      const codes = await Code.find({ userId })
+        .skip(skip)
+        .limit(perPage)
+        .select("code"); // Fetch only the "code" field
+  
+      // Prepare the response
+      const response = {
+        data: codes.map((item) => item.code), // Extract the code field from the documents
+        pagination: {
+          page,
+          perPage,
+          totalPages,
+          totalCodes,
+        },
+      };
+  
+      res.status(200).send(response);
+    } catch (error) {
+      console.error("Error fetching codes:", error);
+      res.status(500).send({ error: "Internal server error" });
+    }
+  });
 
 // Start the server
 app.listen(PORT, () => {
