@@ -86,7 +86,7 @@ function App() {
     }
 
     try {
-      const res = await Axios.post("http://localhost:8000/compile", {
+      const res = await Axios.post("https://zide-zb0z.onrender.com/compile", {
         code: userCode,
         language: userLang,
         input: userInput,
@@ -116,7 +116,7 @@ function App() {
   const handleOptimizeCode = async () => {
     setaiLoading(true);
     const responseCode = await axios.post(
-      "https://zide-server.onrender.com/optimize",
+      "https://zide-zb0z.onrender.com/optimize",
       {
         code: userCode,
       }

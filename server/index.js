@@ -195,25 +195,42 @@ app.post("/compile", async (req, res) => {
 // get the code using user'id
 app.get("/getcode", async (req, res) => {
     const userId = req.query.userId;
-    const response = await Code.find({ userId: userId });
-
-    
-
-    console.log(response[response.length - 1]);
-
-    res.status(200).send(response[response.length - 1]);
-});
+  
+    try {
+      // Fetch the code snippets for the user
+      const response = await Code.find({ userId: userId });
+  
+      if (response.length === 0) {
+        return res.status(404).send({ error: "No code found for this user" });
+      }
+  
+      // Get the last code snippet and its language
+      const lastCode = response[response.length - 1].code;
+      const language = response[response.length - 1].language;  // Fetch language from the database
+  
+      // Slice the code to 1000 characters if it exceeds that length
+      const slicedCode = lastCode.slice(0, 1000); // Slice the code to 1000 characters
+  
+      // Send the sliced code along with language and other metadata
+      res.status(200).send({
+        _id: response[response.length - 1]._id,
+        userId: response[response.length - 1].userId,
+        code: slicedCode,
+        language: language,  // Dynamically include the language
+        createdAt: response[response.length - 1].createdAt,
+        updatedAt: response[response.length - 1].updatedAt,
+        __v: response[response.length - 1].__v,
+      });
+  
+    } catch (error) {
+      console.error("Error fetching code:", error);
+      res.status(500).send({ error: "Internal server error" });
+    }
+  });
+  
+  
 
 // get all the code of the user
-// app.get("/getallcode", async (req, res) => {
-//     const userId = req.query.userId;
-//     const response = await Code.find({ userId: userId });
-//     console.log("all the code of user " + response);
-//     const codeArray = response.map(item => item.code);
-//     res.status(200).send(codeArray);
-// });
-
-
 app.get("/getallcode", async (req, res) => {
     const userId = req.query.userId;
     const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
@@ -227,19 +244,32 @@ app.get("/getallcode", async (req, res) => {
       // Count total codes for the user
       const totalCodes = await Code.countDocuments({ userId });
   
+      if (totalCodes === 0) {
+        return res.status(404).send({ error: "No code snippets found for this user" });
+      }
+  
       // Calculate pagination details
-      const skip = (page - 1) * perPage;
       const totalPages = Math.ceil(totalCodes / perPage);
+  
+      // Prevent requesting a page that doesn't exist
+      if (page > totalPages) {
+        return res.status(400).send({ error: "Page number exceeds total pages" });
+      }
+  
+      const skip = (page - 1) * perPage;
   
       // Fetch codes for the current page
       const codes = await Code.find({ userId })
         .skip(skip)
         .limit(perPage)
-        .select("code"); // Fetch only the "code" field
+        .select("code");
   
       // Prepare the response
       const response = {
-        data: codes.map((item) => item.code), // Extract the code field from the documents
+        data: codes.map((item) => {
+            // Trim code to 1000 characters if it exceeds
+            return item.code.length > 1000 ? item.code.slice(0, 1000) : item.code;
+          }),
         pagination: {
           page,
           perPage,
@@ -254,7 +284,7 @@ app.get("/getallcode", async (req, res) => {
       res.status(500).send({ error: "Internal server error" });
     }
   });
-
+  
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
