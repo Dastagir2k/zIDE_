@@ -197,8 +197,8 @@ app.get("/getcode", async (req, res) => {
     const userId = req.query.userId;
     const response = await Code.find({ userId: userId });
 
-    for (let lastElement in response);
-    lastElement;
+    for (let lastElement in response)
+       lastElement;
 
     console.log(response[lastElement]);
 
