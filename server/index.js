@@ -45,22 +45,36 @@ const upload = multer({
 });
 
 // File upload and code optimization endpoint
-app.post("/uploadFile", upload.single("file"), (req, res) => {
+app.post('/uploadFile', async(req, res) => {
+  
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
+    const fileContent = req.body; // Read the raw text from the request body
+    if (!fileContent) {
+        return res.status(400).json({ error: "No file content received" });
+      }
+      const prompt = `Optimize the following code and include comments for readability:\n\n${fileContent}\n\nProvide the improved code only with comments included.`;
 
-    const uploadedFile = req.file;
-    console.log(`Uploaded file: ${uploadedFile.path}`); // Log file path
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    // Additional processing of the uploaded file (e.g., save to database, process with AI)
-    // ... your code here ...
+        if (!model) {
+            console.error("Model initialization failed.");
+            return res.status(500).json({ error: "Model not available." });
+        }
 
-    res.json({ message: "File uploaded successfully" });
+        const result = await model.generateContent(prompt);
+
+        if (!result || !result.response) {
+          console.error("Invalid response from model.");
+          return res.status(500).json({ error: "Error generating optimized code." });
+      }
+
+      const optimizedCode = result.response.text();
+      console.log("Optimized Code:", optimizedCode);
+
+      res.status(200).json({ code: optimizedCode });
   } catch (error) {
-    console.error("Error handling file upload:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+      console.error("Error processing file content:", error.message);
+      res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
