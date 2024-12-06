@@ -47,7 +47,7 @@ const upload = multer({
 
 // File Content Processing Endpoint
 app.post("/fileContent", async (req, res) => {
-  const fileContent = req.body.data; // Extract file content from POST body
+  const fileContent = req.body; // Extract file content from POST body
 
   if (!fileContent) {
       return res.status(400).json({ error: fileContent });
