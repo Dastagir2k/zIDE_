@@ -51,7 +51,7 @@ app.post('/uploadFile', async(req, res) => {
   // try {
     const fileContent = req.body.fileContent; // Read the raw text from the request body
     console.log(fileContent);
-    return res.send("sucrssss")
+    return res.send(fileContent)
     
     // if (!fileContent) {
     //     return res.status(400).send("file is not present");
