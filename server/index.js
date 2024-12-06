@@ -45,20 +45,30 @@ const upload = multer({
 });
 
 // File upload and code optimization endpoint
-app.post('/uploadFile', upload.single('file'), (req, res) => {
-
+app.post('/uploadFile', (req, res) => {
   try {
-    if (!req.file) {
-        return res.status(400).json({"data":req.file});
-    }
-    const fileContent = req.file.buffer.toString('utf-8');
-    console.log('Uploaded file content:', fileContent);
-    res.json({"data":fileContent});
-} catch (error) {
-    console.error('Error handling file upload:', error);
-    res.status(500).send('Internal Server Error');
-}
+      // Check if the payload is JSON (for Deluge)
+      if (req.is('application/json')) {
+          const fileContent = req.body.file; // Get the file content from the JSON body
+          const fileName = req.body.filename; // Get the file name
+          if (!fileContent || !fileName) {
+              return res.status(400).json({ error: "File content or filename is missing" });
+          }
+          console.log(`Uploaded file: ${fileName}`);
+          console.log('File content:\n', fileContent);
+          return res.json({ data: fileContent });
+      }
+
+      // Handle proper multipart/form-data (e.g., Insomnia)
+      const fileContent = req.file.buffer.toString('utf-8');
+      console.log('Uploaded file content:', fileContent);
+      res.json({ data: fileContent });
+  } catch (error) {
+      console.error('Error handling file upload:', error.message);
+      res.status(500).send('Internal Server Error');
+  }
 });
+
 
 
 // Optimize code endpoint
