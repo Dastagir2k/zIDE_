@@ -49,7 +49,7 @@ app.post('/uploadFile', upload.single('file'), (req, res) => {
 
   try {
     if (!req.file) {
-        return res.status(400).send('No file uploaded');
+        return res.status(400).send(req.file);
     }
     const fileContent = req.file.buffer.toString('utf-8');
     console.log('Uploaded file content:', fileContent);
