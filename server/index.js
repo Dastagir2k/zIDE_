@@ -49,9 +49,13 @@ app.post('/uploadFile', async(req, res) => {
   
   try {
     const fileContent = req.body.fileContent; // Read the raw text from the request body
+    console.log(fileContent);
+    
     if (!fileContent) {
         return res.status(400).json({ error: fileContent});
       }
+        // Decode the escaped characters (replace \\n with newline, \\r with carriage return)
+        fileContent = fileContent.replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\\\/g, '\\');  // Decode \n, \r, and \\
       const prompt = `Optimize the following code and include comments for readability:\n\n${fileContent}\n\nProvide the improved code only with comments included.`;
 
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
