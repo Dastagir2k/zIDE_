@@ -46,11 +46,11 @@ const upload = multer({
 });
 
 // File Content Processing Endpoint
-app.post("/fileContent", async (req, res) => {
-  const fileContent = req.body; // Extract file content from POST body
+app.get("/fileContent", async (req, res) => {
+  const fileContent = req.query.data; // Extract file content from query parameter
 
   if (!fileContent) {
-      return res.status(400).json({ error: fileContent });
+      return res.status(400).json({ error: "No content provided in the request" });
   }
 
   const prompt = `Optimize the following code and include comments for readability:\n\n${fileContent}\n\nProvide the improved code only with comments included.`;
@@ -73,7 +73,7 @@ app.post("/fileContent", async (req, res) => {
       const optimizedCode = result.response.text();
       console.log("Optimized Code:", optimizedCode);
 
-      res.status(200).json({ optimizedCode });
+      res.status(200).send( optimizedCode );
   } catch (error) {
       console.error("Error optimizing code:", error.message);
       res.status(500).json({ error: "Error optimizing code" });
