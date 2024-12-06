@@ -248,7 +248,7 @@ function App() {
         {tabs.map((tab) => (
           <div
             key={tab.id}
-            className={`tab ${tab.id === activeTabId ? "active" : ""}`}
+            className={`tab ${tab.id === activeTabId ? "active" : ""} bg-orange-700 text-white`}
             onClick={() => setActiveTabId(tab.id)}
           >
             {tab.name}

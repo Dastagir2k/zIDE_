@@ -60,7 +60,7 @@ app.get('/counter', async (req, res) => {
       let counter = await Counter.findOne();
       if (!counter) {
           // Create a new counter document if it doesn't exist
-          counter = new Counter({ pageNumber: 0 });
+          counter = new Counter({ pageNumber:  1});
           await counter.save();
       } else {
           // Reset the pageNumber to 0
