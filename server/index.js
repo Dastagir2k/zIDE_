@@ -64,7 +64,7 @@ app.get('/counter', async (req, res) => {
           await counter.save();
       } else {
           // Reset the pageNumber to 0
-          counter.pageNumber = 0;
+          counter.pageNumber = 1;
           await counter.save();
       }
       res.json({ pageNumber: counter.pageNumber });
