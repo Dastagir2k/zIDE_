@@ -46,7 +46,7 @@ const upload = multer({
 });
 
 // File Content Processing Endpoint
-app.post("/fileContent", async (req, res) => {
+app.get("/fileContent", async (req, res) => {
   const fileContent = req.query.data; // Extract file content from query parameter
 
   if (!fileContent) {
