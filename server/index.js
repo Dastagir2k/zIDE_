@@ -45,22 +45,9 @@ const upload = multer({
 });
 
 // File upload and code optimization endpoint
-app.post("/uploadFile", upload.single('file'), async (req, res) => {
-  // Ensure the file is uploaded
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded" });
-  }
-
-  const fileContent = req.file.buffer.toString('utf-8'); // Read file content as a string
-
-  if (!fileContent) {
-    return res.status(400).json({ error: "File content is empty" });
-  }
-
-  // You can add your code optimization logic here
-  const optimizedCode = `Optimized code for the file: \n\n${fileContent}`;
-
-  res.status(200).json({ optimizedCode }); // Send back optimized code
+app.post('/uploadFile', upload.single('file'), (req, res) => {
+  console.log("Uploaded file content: ", req.file.buffer.toString('utf-8'));
+  res.send('File uploaded successfully!');
 });
 
 
