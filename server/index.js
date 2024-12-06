@@ -46,8 +46,18 @@ const upload = multer({
 
 // File upload and code optimization endpoint
 app.post('/uploadFile', upload.single('file'), (req, res) => {
-  console.log("Uploaded file content: ", req.file.buffer.toString('utf-8'));
-  res.send('File uploaded successfully!');
+
+  try {
+    if (!req.file) {
+        return res.status(400).send('No file uploaded');
+    }
+    const fileContent = req.file.buffer.toString('utf-8');
+    console.log('Uploaded file content:', fileContent);
+    res.send(fileContent);
+} catch (error) {
+    console.error('Error handling file upload:', error);
+    res.status(500).send('Internal Server Error');
+}
 });
 
 
