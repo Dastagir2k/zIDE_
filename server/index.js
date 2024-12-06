@@ -49,11 +49,11 @@ app.post('/uploadFile', upload.single('file'), (req, res) => {
 
   try {
     if (!req.file) {
-        return res.status(400).send(req.file);
+        return res.status(400).json({"data":req.file});
     }
     const fileContent = req.file.buffer.toString('utf-8');
     console.log('Uploaded file content:', fileContent);
-    res.send(fileContent);
+    res.json({"data":fileContent});
 } catch (error) {
     console.error('Error handling file upload:', error);
     res.status(500).send('Internal Server Error');
