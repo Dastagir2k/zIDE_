@@ -45,30 +45,24 @@ const upload = multer({
 });
 
 // File upload and code optimization endpoint
-app.post('/uploadFile', (req, res) => {
+app.post("/uploadFile", upload.single("file"), (req, res) => {
   try {
-      // Check if the payload is JSON (for Deluge)
-      if (req.is('application/json')) {
-          const fileContent = req.body.file; // Get the file content from the JSON body
-          const fileName = req.body.filename; // Get the file name
-          if (!fileContent || !fileName) {
-              return res.status(400).json({ error: "File content or filename is missing" });
-          }
-          console.log(`Uploaded file: ${fileName}`);
-          console.log('File content:\n', fileContent);
-          return res.json({ data: fileContent });
-      }
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
 
-      // Handle proper multipart/form-data (e.g., Insomnia)
-      const fileContent = req.file.buffer.toString('utf-8');
-      console.log('Uploaded file content:', fileContent);
-      res.json({ data: fileContent });
+    const uploadedFile = req.file;
+    console.log(`Uploaded file: ${uploadedFile.path}`); // Log file path
+
+    // Additional processing of the uploaded file (e.g., save to database, process with AI)
+    // ... your code here ...
+
+    res.json({ message: "File uploaded successfully" });
   } catch (error) {
-      console.error('Error handling file upload:', error.message);
-      res.status(500).send('Internal Server Error');
+    console.error("Error handling file upload:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
 
 
 // Optimize code endpoint
