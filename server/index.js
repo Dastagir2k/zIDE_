@@ -47,43 +47,38 @@ const upload = multer({
 // File upload and code optimization endpoint
 app.post('/uploadFile', async(req, res) => {
 
- 
-  // try {
-    const fileContent = req.query; // Read the raw text from the request body
-    console.log(req.body);
-    return res.send(req.body)
+ try{
+
+  const fileContent=req.query.data;
     
-    // if (!fileContent) {
-    //     return res.status(400).send("file is not present");
-    //   }else{
-    //     return res.status(200).send("Content present")
-    //   }
-  //       // Decode the escaped characters (replace \\n with newline, \\r with carriage return)
-  //       fileContent = fileContent.replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\\\/g, '\\');  // Decode \n, \r, and \\
-  //     const prompt = `Optimize the following code and include comments for readability:\n\n${fileContent}\n\nProvide the improved code only with comments included.`;
+    if (!fileContent) {
+        return res.status(400).send("file is not present");
+      }
+      
+      const prompt = `Optimize the following code and include comments for readability:\n\n${fileContent}\n\nProvide the improved code only with comments included.`;
 
-  //     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-  //       if (!model) {
-  //           console.error("Model initialization failed.");
-  //           return res.status(500).json({ error: "Model not available." });
-  //       }
+        if (!model) {
+            console.error("Model initialization failed.");
+            return res.status(500).json({ error: "Model not available." });
+        }
 
-  //       const result = await model.generateContent(prompt);
+        const result = await model.generateContent(prompt);
 
-  //       if (!result || !result.response) {
-  //         console.error("Invalid response from model.");
-  //         return res.status(500).json({ error: "Error generating optimized code." });
-  //     }
+        if (!result || !result.response) {
+          console.error("Invalid response from model.");
+          return res.status(500).json({ error: "Error generating optimized code." });
+      }
 
-  //     const optimizedCode = result.response.text();
-  //     console.log("Optimized Code:", optimizedCode);
+      const optimizedCode = result.response.text();
+      console.log("Optimized Code:", optimizedCode);
 
-  //     res.status(200).json({ code: optimizedCode });
-  // } catch (error) {
-  //     console.error("Error processing file content:", error.message);
-  //     res.status(500).json({ error: "Internal Server Error" });
-  // }
+      res.status(200).json({ code: optimizedCode });
+  } catch (error) {
+      console.error("Error processing file content:", error.message);
+      res.status(500).json({ error: "Internal Server Error" });
+  }
 
 });
 
