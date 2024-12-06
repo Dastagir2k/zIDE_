@@ -48,9 +48,9 @@ const upload = multer({
 app.post('/uploadFile', async(req, res) => {
   
   try {
-    const fileContent = req.body; // Read the raw text from the request body
+    const fileContent = req.body.fileContent; // Read the raw text from the request body
     if (!fileContent) {
-        return res.status(400).json({ error: "No file content received" });
+        return res.status(400).json({ error: fileContent});
       }
       const prompt = `Optimize the following code and include comments for readability:\n\n${fileContent}\n\nProvide the improved code only with comments included.`;
 
