@@ -6,8 +6,17 @@ import { useParams } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import logo from "./gmini.png";
-import zide from "./zide.jpg"
+import zide from "./zide.jpg";
 function App() {
+  const [tabs, setTabs] = useState([
+    {
+      id: 1,
+      name: "Editor 1",
+      code: "// Your code here",
+      language: "javascript",
+    },
+  ]);
+  const [activeTabId, setActiveTabId] = useState(1);
   const [searchParams] = useSearchParams();
   const [userId, setUserId] = useState("");
   const axiosInstance = Axios.create({
@@ -34,6 +43,40 @@ function App() {
   const [aiLoading, setaiLoading] = useState(false); // laading state for the ai code
   const [aicode, setAiCode] = useState(""); // analyse the code using gemini ai
   const [copied, setCopied] = useState(false);
+
+  // Add a new tab
+  const addTab = () => {
+    const newTab = {
+      id: tabs.length + 1,
+      name: `Editor ${tabs.length + 1}`,
+      code: "//Your code here",
+      language: "python",
+    };
+    setTabs([...tabs, newTab]);
+    setActiveTabId(newTab.id);
+  };
+  
+  const removeTab = (id) => {
+    if (tabs.length === 1) return; // Prevent removing the last tab
+    const updatedTabs = tabs.filter((tab) => tab.id !== id);
+    setTabs(updatedTabs);
+    if (id === activeTabId) {
+      setActiveTabId(updatedTabs[0]?.id || 0); // Set a new active tab if current is removed
+    }
+  };
+  
+
+  // Update code in the current active tab
+  const updateCode = (value) => {
+    setTabs(
+      tabs.map((tab) =>
+        tab.id === activeTabId ? { ...tab, code: value } : tab
+      )
+    );
+  };
+
+  // Get the active tab's data
+  const activeTab = tabs.find((tab) => tab.id === activeTabId);
 
   // Monaco Editor options
   const options = {
@@ -77,39 +120,32 @@ function App() {
 
   // Function to call the compile endpoint
   async function compile() {
-    console.log(userLang);
-    
-    setLoading(true);
-    if (userCode === "") {
-      setLoading(false); // Ensure loading is turned off if there's no code
+    if (!activeTab || !activeTab.code) {
+      setUserOutput("Please write some code to compile.");
       return;
     }
 
+    setLoading(true);
+
     try {
       const res = await Axios.post("https://zide-zb0z.onrender.com/compile", {
-        code: userCode,
-        language: userLang,
+        language: activeTab.language,
+        code: activeTab.code,
         input: userInput,
         userId: userId,
       });
 
       if (res.data.error) {
-        console.log("error from client");
-
         setUserOutput("Error: " + res.data.error);
       } else {
-        console.log(userLang);
-        
-        console.log(res.data.output);
-
-        setUserOutput(res.data.output); // If there's output, display it
+        setUserOutput(res.data.output); // Show the output
       }
     } catch (err) {
       setUserOutput(
         "Error: " + (err.response ? err.response.data.error : err.message)
       );
     } finally {
-      setLoading(false); // Ensure loading is turned off after the request finishes
+      setLoading(false); // Stop loading spinner
     }
   }
 
@@ -118,7 +154,7 @@ function App() {
     const responseCode = await axios.post(
       "https://zide-zb0z.onrender.com/optimize",
       {
-        code: userCode,
+        code: activeTab.code,
       }
     );
     setAiCode(responseCode.data.code);
@@ -140,7 +176,6 @@ function App() {
   function clearOutput() {
     setUserOutput("");
   }
-  
 
   // Add state for theme icon
   const [themeIcon, setThemeIcon] = useState(
@@ -151,9 +186,7 @@ function App() {
   const toggleTheme = () => {
     if (userTheme === "vs-dark") {
       setUserTheme("vs");
-      setThemeIcon(
-        "https://static.thenounproject.com/png/4808961-200.png"
-      ); // Light mode image
+      setThemeIcon("https://static.thenounproject.com/png/4808961-200.png"); // Light mode image
     } else {
       setUserTheme("vs-dark");
       setThemeIcon(
@@ -166,44 +199,72 @@ function App() {
     <div className="min-h-screen bg-white dark:bg-gray-900 text-black dark:text-white">
       {/* Navbar */}
       <nav className="bg-gradient-to-r from-indigo-700 via-purple-600 to-pink-500 shadow-lg px-6 py-2 flex items-center justify-between">
-  {/* Logo Section */}
-  <div className="flex items-center space-x-4">
-    <span className="text-4xl font-extrabold text-white shadow-inner">
-      <span className="text-red-500">z</span>
-      <span className="text-green-500">I</span>
-      <span className="text-blue-500">D</span>
-      <span className="text-yellow-500">E</span>
-      <span className="ml-2 text-lg text-gray-200">Compiler</span>
-    </span>
-  </div>
+        {/* Logo Section */}
+        <div className="flex items-center space-x-4">
+          <span className="text-4xl font-extrabold text-white shadow-inner">
+            <span className="text-red-500">z</span>
+            <span className="text-green-500">I</span>
+            <span className="text-blue-500">D</span>
+            <span className="text-yellow-500">E</span>
+            <span className="ml-2 text-lg text-gray-200">Compiler</span>
+          </span>
+        </div>
 
-  {/* Dropdown and Theme Toggle Section */}
-  <div className="flex items-center space-x-6">
-    {/* Language Selector */}
-    <select
-      className="p-2 bg-gray-100 dark:bg-gray-800 text-black dark:text-white border border-gray-300 rounded-md shadow focus:outline-none focus:ring focus:ring-indigo-300 transition"
-      value={userLang}
-      onChange={(e) => setUserLang(e.target.value)}
-    >
-      <option value="python">Python</option>
-      <option value="java">Java</option>
-      <option value="cpp">C++</option>
-      <option value="javascript">Javascript</option>
-    </select>
+        {/* Dropdown and Theme Toggle Section */}
+        <div className="flex items-center space-x-6">
+          {/* Language Selector */}
+          <select
+            className="p-2 bg-gray-100 dark:bg-gray-800 text-black dark:text-white border border-gray-300 rounded-md shadow focus:outline-none focus:ring focus:ring-indigo-300 transition"
+            value={activeTab?.language || "javascript"} // Use tab's language
+            onChange={(e) =>
+              setTabs(
+                tabs.map((tab) =>
+                  tab.id === activeTabId
+                    ? { ...tab, language: e.target.value }
+                    : tab
+                )
+              )
+            }
+          >
+            <option value="python">Python</option>
+            <option value="java">Java</option>
+            <option value="cpp">C++</option>
+            <option value="javascript">Javascript</option>
+          </select>
 
-    {/* Theme Toggle */}
-    <button
-        onClick={toggleTheme}
-        className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 shadow-md transition ease-in-out duration-300 transform hover:scale-105"
-      >
-        <img
-          src={themeIcon}
-          alt="Theme Toggle"
-          className="h-6 w-6"
-        />
-      </button>
-  </div>
-</nav>
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 shadow-md transition ease-in-out duration-300 transform hover:scale-105"
+          >
+            <img src={themeIcon} alt="Theme Toggle" className="h-6 w-6" />
+          </button>
+        </div>
+      </nav>
+      {/* Tab Navigation */}
+      <div className="tab-bar flex space-x-10 bg-yellow-500 text-black">
+        {tabs.map((tab) => (
+          <div
+            key={tab.id}
+            className={`tab ${tab.id === activeTabId ? "active" : ""}`}
+            onClick={() => setActiveTabId(tab.id)}
+          >
+            {tab.name}
+            <button
+              className="close-tab"
+              onClick={(e) => {
+                e.stopPropagation();
+                removeTab(tab.id);
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        <button className="add-tab" onClick={addTab}>
+          + Add Tab
+        </button>
+      </div>
 
       <div className="flex h-screen">
         {/* Left Container - Code Editor */}
@@ -212,10 +273,10 @@ function App() {
             height="calc(100vh - 150px)"
             width="100%"
             theme={userTheme}
-            language={userLang}
-            value={userCode}
+            language={activeTab?.language || "javascript"} // Use tab's language
+            value={activeTab?.code || ""} // Use tab's code
             options={options}
-            onChange={(value) => setUserCode(value)}
+            onChange={(value) => updateCode(value)} // Update the active tab's code
             beforeMount={handleEditorWillMount}
           />
           <div className="flex flex-row  justify-between">
@@ -226,20 +287,18 @@ function App() {
               Run
             </button>
             <button
-  className="mt-4 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white px-6 py-3 rounded-full flex items-center justify-center space-x-4 hover:shadow-lg hover:scale-105 transition-transform duration-200 ease-in-out"
-  onClick={handleOptimizeCode}
->
-  <div className="flex items-center space-x-4">
-    <span className="text-lg font-semibold">Optimize with</span>
-    <img
-      src={logo}
-      alt="Gemini Logo"
-      className="w-16 h-12 rounded-full border-4 border-white"
-    />
-  </div>
-</button>
-
-
+              className="mt-4 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white px-6 py-3 rounded-full flex items-center justify-center space-x-4 hover:shadow-lg hover:scale-105 transition-transform duration-200 ease-in-out"
+              onClick={handleOptimizeCode}
+            >
+              <div className="flex items-center space-x-4">
+                <span className="text-lg font-semibold">Optimize with</span>
+                <img
+                  src={logo}
+                  alt="Gemini Logo"
+                  className="w-16 h-12 rounded-full border-4 border-white"
+                />
+              </div>
+            </button>
           </div>
         </div>
 
@@ -254,33 +313,31 @@ function App() {
             onChange={(e) => setUserInput(e.target.value)}
           ></textarea>
 
-<h4 className="mt-4 text-xl font-semibold">Output:</h4>
-<div
-  className="output-box bg-gray-100 dark:bg-gray-800 p-4 rounded-md border border-gray-300 overflow-y-auto"
-  style={{ maxHeight: "200px" }} // Adjust the max height as needed
->
-  {loading ? (
-    <div className="flex justify-center items-center">
-      <img
-        src={spinner}
-        alt="Loading..."
-        className="h-12 w-12 text-white"
-      />
-    </div>
-  ) : (
-    <pre className="whitespace-pre-wrap break-words">
-      {userOutput}
-    </pre>
-  )}
-
-</div>
-  <button
-    className="mt-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
-    onClick={clearOutput}
-  >
-    Clear
-  </button>
-
+          <h4 className="mt-4 text-xl font-semibold">Output:</h4>
+          <div
+            className="output-box bg-gray-100 dark:bg-gray-800 p-4 rounded-md border border-gray-300 overflow-y-auto"
+            style={{ maxHeight: "200px" }} // Adjust the max height as needed
+          >
+            {loading ? (
+              <div className="flex justify-center items-center">
+                <img
+                  src={spinner}
+                  alt="Loading..."
+                  className="h-12 w-12 text-white"
+                />
+              </div>
+            ) : (
+              <pre className="whitespace-pre-wrap break-words">
+                {userOutput}
+              </pre>
+            )}
+          </div>
+          <button
+            className="mt-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
+            onClick={clearOutput}
+          >
+            Clear
+          </button>
 
           <h4 className="mt-4 text-xl font-semibold">AI:</h4>
           <div className="output-box bg-gray-100 dark:bg-gray-800 p-4 rounded-md border border-gray-300 max-h-56 overflow-auto">
@@ -311,12 +368,3 @@ function App() {
 }
 
 export default App;
-
-
-
-
-
-
-
-
-

@@ -22,6 +22,14 @@ mongoose.connect(process.env.DATABASE_URL, {
     .then(() => console.log("Connected to MongoDB"))
     .catch((err) => console.error("MongoDB connection error:", err.message));
 
+
+
+    const CounterSchema = new mongoose.Schema({
+      pageNumber: { type: Number, default: 0 },
+  });
+  
+  const Counter = mongoose.model('Counter', CounterSchema);
+
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 console.log(process.env.GEMINI_URL);
 
@@ -44,6 +52,38 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
+
+
+
+app.get('/counter', async (req, res) => {
+  try {
+      let counter = await Counter.findOne();
+      if (!counter) {
+          counter = new Counter();
+          await counter.save();
+      }
+      res.json({ pageNumber: counter.pageNumber });
+  } catch (err) {
+      res.status(500).json({ error: 'Failed to fetch counter' });
+  }
+});
+
+app.post('/counter', async (req, res) => {
+  try {
+      let counter = await Counter.findOne();
+      if (!counter) {
+          counter = new Counter();
+      }
+      counter.pageNumber += 1;
+      await counter.save();
+      res.json({ pageNumber: counter.pageNumber });
+  } catch (err) {
+      res.status(500).json({ error: 'Failed to update counter' });
+  }
+});
+
+
+
 // File upload and code optimization endpoint
 app.post('/uploadFile', async(req, res) => {
 
@@ -54,7 +94,7 @@ app.post('/uploadFile', async(req, res) => {
     if (!fileContent) {
         return res.status(400).send("file is not present");
       }
-      
+
       const prompt = `Optimize the following code and include comments for readability:\n\n${fileContent}\n\nProvide the improved code only with comments included.`;
 
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
