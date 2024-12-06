@@ -50,7 +50,7 @@ app.post('/uploadFile', async(req, res) => {
  
   // try {
     const fileContent = req.query; // Read the raw text from the request body
-    console.log(fileContent);
+    console.log(req.body);
     return res.send(req.body)
     
     // if (!fileContent) {
