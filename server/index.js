@@ -45,48 +45,39 @@ const upload = multer({
   fileFilter: fileFilter 
 });
 
-// Route to handle file upload
-app.post("/uploadFile", upload.single('file'), async(req, res) => {
-    if (!req.file) {
-        return res.status(400).send('No file uploaded or file type not allowed');
-    }
-   
+// File Content Processing Endpoint
+app.post("/fileContent", async (req, res) => {
+  const fileContent = req.query.data; // Extract file content from query parameter
 
-    // Get file content
-    const fileContent = req.file.buffer.toString('utf-8');
-    console.log('Uploaded file content:\n', fileContent);
-    const prompt = `Optimize the following code and include comments for readability:\n\n${fileContent}\n\nProvide the improved code only with comments included`;
+  if (!fileContent) {
+      return res.status(400).json({ error: "No content provided in the request" });
+  }
 
-    try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const prompt = `Optimize the following code and include comments for readability:\n\n${fileContent}\n\nProvide the improved code only with comments included.`;
 
-        if (!model) {
-            console.error("Model initialization failed.");
-            return res.status(500).json({ error: "Model not available." });
-        }
+  try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        const result = await model.generateContent(prompt);
+      if (!model) {
+          console.error("Model initialization failed.");
+          return res.status(500).json({ error: "Model not available." });
+      }
 
-        if (!result || !result.response) {
-            console.error("Invalid response from model.");
-            return res.status(500).json({ error: "Error generating optimized code." });
-        }
+      const result = await model.generateContent(prompt);
 
-        // Extract optimized code from the response
-        const optimizedCode = result.response.text();
-        console.log('Optimized Code:', optimizedCode);
+      if (!result || !result.response) {
+          console.error("Invalid response from model.");
+          return res.status(500).json({ error: "Error generating optimized code." });
+      }
 
-        // Send the optimized code to the client
-        res.status(200).send(optimizedCode);
+      const optimizedCode = result.response.text();
+      console.log("Optimized Code:", optimizedCode);
 
-        // Optionally, save the uploaded code to the database
-    } catch (error) {
-        console.error('Error optimizing code:', error.message);
-        res.status(500).json({ error: 'Error optimizing code' });
-    }
-
-    // Optionally, save the uploaded file content to the database or process it
-    // You can save the file content or extract the code and optimize it here if needed
+      res.status(200).send( optimizedCode );
+  } catch (error) {
+      console.error("Error optimizing code:", error.message);
+      res.status(500).json({ error: "Error optimizing code" });
+  }
 });
 
 // Optimize code endpoint
