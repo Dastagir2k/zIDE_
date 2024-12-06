@@ -59,14 +59,20 @@ app.get('/counter', async (req, res) => {
   try {
       let counter = await Counter.findOne();
       if (!counter) {
-          counter = new Counter();
+          // Create a new counter document if it doesn't exist
+          counter = new Counter({ pageNumber: 0 });
+          await counter.save();
+      } else {
+          // Reset the pageNumber to 0
+          counter.pageNumber = 0;
           await counter.save();
       }
       res.json({ pageNumber: counter.pageNumber });
   } catch (err) {
-      res.status(500).json({ error: 'Failed to fetch counter' });
+      res.status(500).json({ error: 'Failed to fetch and reset counter' });
   }
 });
+
 
 app.post('/counter', async (req, res) => {
   try {
