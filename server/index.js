@@ -25,10 +25,9 @@ mongoose.connect(process.env.DATABASE_URL, {
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 console.log(process.env.GEMINI_URL);
 
-// Set up multer for file upload with a file filter
-const storage = multer.memoryStorage(); // Use memory storage to keep file content in memory
 
-// File filter to accept only .js, .py, .html, .txt, .java, .jsx files
+const storage = multer.memoryStorage(); 
+// Set up multer for file upload with a file filter
 const fileFilter = (req, file, cb) => {
   const allowedExtensions = ['.js', '.py', '.html', '.txt', '.java', '.jsx'];
   const fileExtension = file.originalname.split('.').pop().toLowerCase();
@@ -40,45 +39,30 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const upload = multer({ 
-  storage: storage, 
-  fileFilter: fileFilter 
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter
 });
 
-// File Content Processing Endpoint
-app.get("/fileContent", async (req, res) => {
-  const fileContent = req.query.data; // Extract file content from query parameter
+// File upload and code optimization endpoint
+app.post("/uploadFile", upload.single('file'), async (req, res) => {
+  // Ensure the file is uploaded
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  const fileContent = req.file.buffer.toString('utf-8'); // Read file content as a string
 
   if (!fileContent) {
-      return res.status(400).json({ error: "No content provided in the request" });
+    return res.status(400).json({ error: "File content is empty" });
   }
 
-  const prompt = `Optimize the following code and include comments for readability:\n\n${fileContent}\n\nProvide the improved code only with comments included.`;
+  // You can add your code optimization logic here
+  const optimizedCode = `Optimized code for the file: \n\n${fileContent}`;
 
-  try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-      if (!model) {
-          console.error("Model initialization failed.");
-          return res.status(500).json({ error: "Model not available." });
-      }
-
-      const result = await model.generateContent(prompt);
-
-      if (!result || !result.response) {
-          console.error("Invalid response from model.");
-          return res.status(500).json({ error: "Error generating optimized code." });
-      }
-
-      const optimizedCode = result.response.text();
-      console.log("Optimized Code:", optimizedCode);
-
-      res.status(200).send( optimizedCode );
-  } catch (error) {
-      console.error("Error optimizing code:", error.message);
-      res.status(500).json({ error: "Error optimizing code" });
-  }
+  res.status(200).json({ optimizedCode }); // Send back optimized code
 });
+
 
 // Optimize code endpoint
 app.post("/optimize", async (req, res) => {
