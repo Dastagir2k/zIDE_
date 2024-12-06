@@ -50,7 +50,7 @@ app.post("/fileContent", async (req, res) => {
   const fileContent = req.body.data; // Extract file content from POST body
 
   if (!fileContent) {
-      return res.status(400).json({ error: "No file content provided in the request" });
+      return res.status(400).json({ error: fileContent });
   }
 
   const prompt = `Optimize the following code and include comments for readability:\n\n${fileContent}\n\nProvide the improved code only with comments included.`;
