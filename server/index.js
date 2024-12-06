@@ -49,7 +49,7 @@ app.post('/uploadFile', async(req, res) => {
 
  
   // try {
-    const fileContent = req.body.fileContent; // Read the raw text from the request body
+    const fileContent = req.query; // Read the raw text from the request body
     console.log(fileContent);
     return res.send(fileContent)
     
