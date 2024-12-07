@@ -34,23 +34,6 @@ const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 console.log(process.env.GEMINI_URL);
 
 
-const storage = multer.memoryStorage(); 
-// Set up multer for file upload with a file filter
-const fileFilter = (req, file, cb) => {
-  const allowedExtensions = ['.js', '.py', '.html', '.txt', '.java', '.jsx'];
-  const fileExtension = file.originalname.split('.').pop().toLowerCase();
-
-  if (allowedExtensions.includes(`.${fileExtension}`)) {
-    cb(null, true); // Accept the file
-  } else {
-    cb(new Error('Only code files (.js, .py, .html, .txt, .java, .jsx) are allowed'), false); // Reject the file
-  }
-};
-
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter
-});
 
 
 

@@ -1,14 +1,10 @@
-
-
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import Editor from "@monaco-editor/react";
 import Axios from "axios";
 import spinner from "./spinner.svg";
 import { useParams } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
-import axios from "axios";
-import logo from "./gmini.png";
-import zide from "./zide.jpg";
+
 function App() {
   const [tabs, setTabs] = useState([
     {
@@ -19,11 +15,19 @@ function App() {
     },
   ]);
   const [activeTabId, setActiveTabId] = useState(1);
+  const [userInput, setUserInput] = useState("");
+  const [userOutput, setUserOutput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [aiLoading, setaiLoading] = useState(false);
+  const [aicode, setAiCode] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [userTheme, setUserTheme] = useState("vs-dark");
   const [searchParams] = useSearchParams();
   const [userId, setUserId] = useState("");
-  const axiosInstance = Axios.create({
-    timeout: 10000, // Set timeout to 10 seconds (10000ms)
-  });
+
+  const activeTab = tabs.find((tab) => tab.id === activeTabId);
+  const options = { fontSize: 16 };
+
   useEffect(() => {
     const userid = searchParams.get("userid");
     if (userid != null) {
@@ -34,41 +38,6 @@ function App() {
 
   console.log("welcome user : ", userId);
 
-  // State variables
-  const [userCode, setUserCode] = useState(""); // User code
-  const [userLang, setUserLang] = useState("python"); // Language selected
-  const [userTheme, setUserTheme] = useState("vs-dark"); // Theme selected
-  const [fontSize, setFontSize] = useState(20); // Font size for the editor
-  const [userInput, setUserInput] = useState(""); // User input for the code
-  const [userOutput, setUserOutput] = useState(""); // Output from the code
-  const [loading, setLoading] = useState(false); // Loading state for the API call
-  const [aiLoading, setaiLoading] = useState(false); // laading state for the ai code
-  const [aicode, setAiCode] = useState(""); // analyse the code using gemini ai
-  const [copied, setCopied] = useState(false);
-
-  // Add a new tab
-  const addTab = () => {
-    const newTab = {
-      id: tabs.length + 1,
-      name: `Editor ${tabs.length + 1}`,
-      code: "//Your code here",
-      language: "python",
-    };
-    setTabs([...tabs, newTab]);
-    setActiveTabId(newTab.id);
-  };
-  
-  const removeTab = (id) => {
-    if (tabs.length === 1) return; // Prevent removing the last tab
-    const updatedTabs = tabs.filter((tab) => tab.id !== id);
-    setTabs(updatedTabs);
-    if (id === activeTabId) {
-      setActiveTabId(updatedTabs[0]?.id || 0); // Set a new active tab if current is removed
-    }
-  };
-  
-
-  // Update code in the current active tab
   const updateCode = (value) => {
     setTabs(
       tabs.map((tab) =>
@@ -77,58 +46,34 @@ function App() {
     );
   };
 
-  // Get the active tab's data
-  const activeTab = tabs.find((tab) => tab.id === activeTabId);
-
-  // Monaco Editor options
-  const options = {
-    fontSize: fontSize,
+  const addTab = () => {
+    const newTab = {
+      id: tabs.length + 1,
+      name: `Editor ${tabs.length + 1}`,
+      code: "//Your code here",
+      language: "javascript",
+    };
+    setTabs([...tabs, newTab]);
+    setActiveTabId(newTab.id);
   };
 
-  // Monaco editor will mount
-  function handleEditorWillMount(monaco) {
-    monaco.languages.registerCompletionItemProvider("python", {
-      provideCompletionItems: () => {
-        const suggestions = [
-          {
-            label: "print",
-            kind: monaco.languages.CompletionItemKind.Function,
-            insertText: "print(${1})",
-            insertTextRules:
-              monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-            documentation: "Outputs a message to the console.",
-          },
-          {
-            label: "input",
-            kind: monaco.languages.CompletionItemKind.Function,
-            insertText: "input(${1})",
-            insertTextRules:
-              monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-            documentation: "Gets user input.",
-          },
-          {
-            label: "for loop",
-            kind: monaco.languages.CompletionItemKind.Snippet,
-            insertText: "for i in range(${1}):\n\t${2}",
-            insertTextRules:
-              monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-            documentation: "Python for loop.",
-          },
-        ];
-        return { suggestions: suggestions };
-      },
-    });
-  }
+  const removeTab = (id) => {
+    if (tabs.length === 1) return;
+    const updatedTabs = tabs.filter((tab) => tab.id !== id);
+    setTabs(updatedTabs);
+    if (id === activeTabId) {
+      setActiveTabId(updatedTabs[0]?.id || 0);
+    }
+  };
 
-  // Function to call the compile endpoint
-  async function compile() {
+  const compile = async () => {
+    console.log(activeTab.code);
+
     if (!activeTab || !activeTab.code) {
       setUserOutput("Please write some code to compile.");
       return;
     }
-
     setLoading(true);
-
     try {
       const res = await Axios.post("https://zide-zb0z.onrender.com/compile", {
         language: activeTab.language,
@@ -136,88 +81,60 @@ function App() {
         input: userInput,
         userId: userId,
       });
+      console.log(res.data.output);
 
-      if (res.data.error) {
-        setUserOutput("Error: " + res.data.error);
-      } else {
-        setUserOutput(res.data.output); // Show the output
-      }
-    } catch (err) {
-      setUserOutput(
-        "Error: " + (err.response ? err.response.data.error : err.message)
-      );
+      setUserOutput(res.data.output || res.data.error || "Unknown Error");
+    } catch (error) {
+      setUserOutput(`Errorrrr: ${error.message}`);
     } finally {
-      setLoading(false); // Stop loading spinner
+      setLoading(false);
     }
-  }
+  };
 
   const handleOptimizeCode = async () => {
     setaiLoading(true);
-    const responseCode = await axios.post(
-      "https://zide-zb0z.onrender.com/optimize",
-      {
+    try {
+      const res = await Axios.post("https://zide-zb0z.onrender.com/optimize", {
         code: activeTab.code,
-      }
-    );
-    setAiCode(responseCode.data.code);
-    console.log(aicode);
-    setaiLoading(false);
+      });
+
+      setAiCode(res.data.code);
+      console.log(aicode);
+    } catch (error) {
+      setAiCode(`Error: ${error.message}`);
+    } finally {
+      setaiLoading(false);
+    }
   };
 
   const handleCopyCode = async () => {
     try {
       await navigator.clipboard.writeText(aicode);
       setCopied(true);
-      console.log("Code copied!");
-    } catch (err) {
-      console.log("Error on Copied code", err);
-    }
-  };
-
-  // Function to clear the output screen
-  function clearOutput() {
-    setUserOutput("");
-  }
-
-  // Add state for theme icon
-  const [themeIcon, setThemeIcon] = useState(
-    "https://www.pngfind.com/pngs/m/75-759829_png-file-svg-night-mode-icon-download-transparent.png"
-  );
-
-  // Toggle theme function
-  const toggleTheme = () => {
-    if (userTheme === "vs-dark") {
-      setUserTheme("vs");
-      setThemeIcon("https://static.thenounproject.com/png/4808961-200.png"); // Light mode image
-    } else {
-      setUserTheme("vs-dark");
-      setThemeIcon(
-        "https://www.pngfind.com/pngs/m/75-759829_png-file-svg-night-mode-icon-download-transparent.png"
-      ); // Dark mode image
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 text-black dark:text-white">
+    <div className="min-h-screen bg-gray-900 text-white">
       {/* Navbar */}
-      <nav className="bg-gradient-to-r from-indigo-700 via-purple-600 to-pink-500 shadow-lg px-6 py-2 flex items-center justify-between">
-        {/* Logo Section */}
-        <div className="flex items-center space-x-4">
-          <span className="text-4xl font-extrabold text-white shadow-inner">
-            <span className="text-red-500">z</span>
-            <span className="text-green-500">I</span>
-            <span className="text-blue-500">D</span>
-            <span className="text-yellow-500">E</span>
-            <span className="ml-2 text-lg text-gray-200">Compiler</span>
-          </span>
+      <nav className="bg-gradient-to-r from-indigo-600 to-pink-600 px-4 py-2 shadow-md flex justify-between items-center">
+        {/* App Logo */}
+        <div className="text-4xl font-extrabold text-white flex items-center">
+          <span className="text-red-500">z</span>
+          <span className="text-green-500">I</span>
+          <span className="text-blue-500">D</span>
+          <span className="text-yellow-500">E</span>
+          <span className="ml-2 text-xs text-gray-300">Code Editor</span>
         </div>
 
-        {/* Dropdown and Theme Toggle Section */}
-        <div className="flex items-center space-x-6">
-          {/* Language Selector */}
+        {/* Dropdown & Theme Toggle */}
+        <div className="flex items-center space-x-3">
           <select
-            className="p-2 bg-gray-100 dark:bg-gray-800 text-black dark:text-white border border-gray-300 rounded-md shadow focus:outline-none focus:ring focus:ring-indigo-300 transition"
-            value={activeTab?.language || "javascript"} // Use tab's language
+            className="bg-gray-800 text-white p-2 rounded-md"
+            value={activeTab?.language || "python"}
             onChange={(e) =>
               setTabs(
                 tabs.map((tab) =>
@@ -233,135 +150,132 @@ function App() {
             <option value="cpp">C++</option>
             <option value="javascript">Javascript</option>
           </select>
-
-          {/* Theme Toggle */}
           <button
-            onClick={toggleTheme}
-            className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 shadow-md transition ease-in-out duration-300 transform hover:scale-105"
+            onClick={() =>
+              setUserTheme(userTheme === "vs-dark" ? "vs" : "vs-dark")
+            }
+            className="bg-gray-700 px-4 py-2 rounded-md hover:bg-gray-600"
           >
-            <img src={themeIcon} alt="Theme Toggle" className="h-6 w-6" />
+            Toggle Theme
           </button>
         </div>
       </nav>
-      {/* Tab Navigation */}
-      <div className="tab-bar flex space-x-10 bg-yellow-500 text-black">
-        {tabs.map((tab) => (
-          <div
-            key={tab.id}
-            className={`tab ${tab.id === activeTabId ? "active" : ""} bg-orange-700 text-white`}
-            onClick={() => setActiveTabId(tab.id)}
-          >
-            {tab.name}
-            <button
-              className="close-tab"
-              onClick={(e) => {
-                e.stopPropagation();
-                removeTab(tab.id);
-              }}
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-        <button className="add-tab" onClick={addTab}>
+
+      {/* Toolbar */}
+      <div className="bg-gray-800 px-4 py-2 flex items-center justify-between">
+        {/* Add Tab Button */}
+        <button
+          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-500"
+          onClick={addTab}
+        >
           + Add Tab
         </button>
+
+        {/* Action Buttons */}
+        <div className="space-x-2">
+          <button
+            className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600"
+            onClick={compile}
+          >
+            Run Code
+          </button>
+          <button
+            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
+            onClick={() => setUserOutput("")}
+          >
+            Clear Output
+          </button>
+          <button
+            className="bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600"
+            onClick={handleOptimizeCode}
+          >
+            Optimize Code
+          </button>
+        </div>
       </div>
 
       <div className="flex h-screen">
-        {/* Left Container - Code Editor */}
-        <div className="w-2/3 p-4">
-          <Editor
-            height="calc(100vh - 150px)"
-            width="100%"
-            theme={userTheme}
-            language={activeTab?.language || "javascript"} // Use tab's language
-            value={activeTab?.code || ""} // Use tab's code
-            options={options}
-            onChange={(value) => updateCode(value)} // Update the active tab's code
-            beforeMount={handleEditorWillMount}
-          />
-          <div className="flex flex-row  justify-between">
-            <button
-              className="mt-4 bg-teal-500 text-white h-10  w-16 rounded-md hover:bg-teal-600"
-              onClick={compile}
+        {/* Vertical Tab Bar */}
+        <div className="w-1/5 bg-gray-800 text-gray-300 flex flex-col py-4">
+          {tabs.map((tab) => (
+            <div
+              key={tab.id}
+              className={`px-4 py-2 cursor-pointer rounded-md mb-2 ${
+                tab.id === activeTabId
+                  ? "bg-indigo-500 text-white"
+                  : "hover:bg-gray-700"
+              }`}
+              onClick={() => setActiveTabId(tab.id)}
             >
-              Run
-            </button>
-            <button
-              className="mt-4 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white px-6 py-3 rounded-full flex items-center justify-center space-x-4 hover:shadow-lg hover:scale-105 transition-transform duration-200 ease-in-out"
-              onClick={handleOptimizeCode}
-            >
-              <div className="flex items-center space-x-4">
-                <span className="text-lg font-semibold">Optimize with</span>
-                <img
-                  src={logo}
-                  alt="Gemini Logo"
-                  className="w-16 h-12 rounded-full border-4 border-white"
-                />
+              <div className="flex items-center justify-between">
+                <span>{tab.name}</span>
+                <button
+                  className="text-gray-500 hover:text-black font-bold"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeTab(tab.id);
+                  }}
+                >
+                  ✕
+                </button>
               </div>
-            </button>
-          </div>
+            </div>
+          ))}
         </div>
 
-        {/* Right Container - Input & Output */}
-        <div className="w-1/3 p-4">
-          <h4 className="text-xl font-semibold">Input:</h4>
-          <textarea
-            className="w-full p-2 bg-gray-200 dark:bg-gray-700 border rounded-md"
-            rows="6"
-            placeholder="Enter input for the code"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-          ></textarea>
+        {/* Editor Section */}
+        <div className="flex-1 flex flex-col">
+          <Editor
+            height="calc(100vh - 150px)"
+            theme={userTheme}
+            language={activeTab?.language || "javascript"}
+            value={activeTab?.code || ""}
+            options={options}
+            onChange={(value) => updateCode(value)}
+          />
 
-          <h4 className="mt-4 text-xl font-semibold">Output:</h4>
-          <div
-            className="output-box bg-gray-100 dark:bg-gray-800 p-4 rounded-md border border-gray-300 overflow-y-auto"
-            style={{ maxHeight: "200px" }} // Adjust the max height as needed
-          >
-            {loading ? (
-              <div className="flex justify-center items-center">
-                <img
-                  src={spinner}
-                  alt="Loading..."
-                  className="h-12 w-12 text-white"
-                />
-              </div>
-            ) : (
-              <pre className="whitespace-pre-wrap break-words">
-                {userOutput}
-              </pre>
-            )}
-          </div>
-          <button
-            className="mt-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
-            onClick={clearOutput}
-          >
-            Clear
-          </button>
+          {/* Input & Output */}
+          <div className="flex px-6 py-4 bg-gray-800">
+            {/* Input */}
+            <div className="w-1/2 px-4">
+              <h4 className="text-lg font-semibold mb-2">Input</h4>
+              <textarea
+                className="w-full bg-gray-700 text-white p-3 rounded-md h-32 resize-none"
+                placeholder="Enter input for the code"
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+              ></textarea>
+            </div>
 
-          <h4 className="mt-4 text-xl font-semibold">AI:</h4>
-          <div className="output-box bg-gray-100 dark:bg-gray-800 p-4 rounded-md border border-gray-300 max-h-56 overflow-auto">
-            <pre className="whitespace-pre-wrap break-words">{aicode}</pre>
-            {aiLoading ? (
-              <div className="flex justify-center items-center">
-                <img
-                  src={spinner}
-                  alt="Loading..."
-                  className="h-12 w-12 text-white"
-                />
+            {/* Output */}
+            <div className="w-1/2 px-4">
+              <h4 className="text-lg font-semibold mb-2">Output</h4>
+              <div className="bg-gray-700 text-white p-3 rounded-md h-32 overflow-y-auto overflow-x-hidden">
+                {loading ? (
+                  <div className="flex justify-center items-center">
+                    <img src={spinner} alt="Loading..." className="h-12 w-12" />
+                  </div>
+                ) : (
+                  <pre>{userOutput}</pre>
+                )}
               </div>
-            ) : (
-              <button
-                className="mt-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
-                onClick={handleCopyCode}
-              >
-                <pre className="whitespace-pre-wrap break-words">
-                  {copied ? "copied!" : "copy"}
-                </pre>
-              </button>
-            )}
+            </div>
+
+            {/* Ai Code */}
+            <div className="w-1/2 px-4">
+              <h4 className="text-lg font-semibold mb-2">Ai </h4>
+              <div className="bg-gray-700 text-white p-3 rounded-md h-32 overflow-y-auto overflow-x-hidden">
+                {aiLoading ? (
+                  <div className="whitespace-pre-wrap">
+                    <img src={spinner} alt="Loading..." className="h-12 w-12" />
+                  </div>
+                ) : (
+                  <pre className="whitespace-pre-wrap">
+                    {aicode || "Optimized code will appear here."}
+                  </pre>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -370,9 +284,3 @@ function App() {
 }
 
 export default App;
-
-
-
-
-
-
