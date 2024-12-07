@@ -64,6 +64,8 @@ app.get('/resetPage', async (req, res) => {
 
 
 app.post('/nextPage', async (req, res) => {
+  const { userId } = req.query.userId;  // Get userId from the query string
+
   try {
       let counter = await Counter.findOne({ userId});
       if (!counter) {
