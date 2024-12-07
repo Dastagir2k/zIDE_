@@ -40,7 +40,7 @@ console.log(process.env.GEMINI_URL);
 
 
 app.get('/resetPage', async (req, res) => {
-  const { userId } = req.query.userId;  // Get userId from the query string
+  const  userId  = req.query.userId;  // Get userId from the query string
    if (!userId) {
        return res.status(400).json({ error: 'User ID is required' });
    }
@@ -64,7 +64,7 @@ app.get('/resetPage', async (req, res) => {
 
 
 app.post('/nextPage', async (req, res) => {
-  const { userId } = req.query.userId;  // Get userId from the query string
+  const userId  = req.query.userId;  // Get userId from the query string
 
   try {
       let counter = await Counter.findOne({ userId});
@@ -80,7 +80,7 @@ app.post('/nextPage', async (req, res) => {
 });
 
 app.post('/prevPage', async (req, res) => {
-  const { userId } = req.query.userId;  // Get userId from the body
+  const userId  = req.query.userId;  // Get userId from the body
   if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
   }
