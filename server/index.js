@@ -25,6 +25,7 @@ mongoose.connect(process.env.DATABASE_URL, {
 
 
     const CounterSchema = new mongoose.Schema({
+      userId: { type: String, required: true },
       pageNumber: { type: Number, default: 0 },
   });
   
@@ -38,12 +39,17 @@ console.log(process.env.GEMINI_URL);
 
 
 
-app.get('/counter', async (req, res) => {
+app.get('/resetPage', async (req, res) => {
+  const { userId } = req.query.userId;  // Get userId from the query string
+   if (!userId) {
+       return res.status(400).json({ error: 'User ID is required' });
+   }
   try {
-      let counter = await Counter.findOne();
+
+      let counter = await Counter.findOne({ userId });
       if (!counter) {
           // Create a new counter document if it doesn't exist
-          counter = new Counter({ pageNumber:  1});
+          counter = new Counter({userId, pageNumber:  1});
           await counter.save();
       } else {
           // Reset the pageNumber to 0
@@ -57,11 +63,11 @@ app.get('/counter', async (req, res) => {
 });
 
 
-app.post('/counter', async (req, res) => {
+app.post('/nextPage', async (req, res) => {
   try {
-      let counter = await Counter.findOne();
+      let counter = await Counter.findOne({ userId});
       if (!counter) {
-          counter = new Counter();
+          counter = new Counter({ userId});
       }
       counter.pageNumber += 1;
       await counter.save();
@@ -70,6 +76,28 @@ app.post('/counter', async (req, res) => {
       res.status(500).json({ error: 'Failed to update counter' });
   }
 });
+
+app.post('/prevPage', async (req, res) => {
+  const { userId } = req.query.userId;  // Get userId from the body
+  if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+  }
+
+  try {
+      let counter = await Counter.findOne({ userId });
+      if (!counter) {
+          return res.status(404).json({ error: 'Counter not found for this user' });
+      }
+
+      // Decrease the pageNumber by 1
+      counter.pageNumber -= 1;
+      await counter.save();
+      res.json({ pageNumber: counter.pageNumber });
+  } catch (err) {
+      res.status(500).json({ error: 'Failed to decrement counter' });
+  }
+});
+
 
 
 
